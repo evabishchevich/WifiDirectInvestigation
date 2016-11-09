@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">WifiDirectDemo</string>
+
+    <!-- Peers -->
+    <string name="start_discovery">Start discovery</string>
+    <string name="create_group">Create group</string>
+    <string name="connect">Connect</string>
+    <string name="send_data">Send data</string>
+
+</resources>
