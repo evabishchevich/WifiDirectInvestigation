@@ -14,69 +14,32 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.*
-import org.thaliproject.p2p.wifidirectdemo.R
-import org.thaliproject.p2p.wifidirectdemo.WDApplication
-import org.thaliproject.p2p.wifidirectdemo.WDLog
-import org.thaliproject.p2p.wifidirectdemo.WifiDirectReceiver
+import android.widget.Toast
+import org.thaliproject.p2p.wifidirectdemo.*
 import org.thaliproject.p2p.wifidirectdemo.peers.details.PeerDetailsActivity
 import org.thaliproject.p2p.wifidirectdemo.peers.service.DemoService
 import timber.log.Timber
 
 
-class PeersFragment : Fragment() {
-
-    lateinit var wifiDirectReceiver: WifiDirectReceiver
-    lateinit var wifiP2pManager: WifiP2pManager
-    lateinit var channel: WifiP2pManager.Channel
+class PeersFragment : BaseFragment() {
 
     lateinit var adapter: PeersAdapter
-    lateinit var wifiFilter: IntentFilter
     lateinit var rvPeers: RecyclerView
+
+    private var serverStarted = false
+
+    companion object {
+        val DEVICE_NAME = "ThaliGroup"
+    }
 
     val peerClickListener = object : PeersAdapter.OnPeerClickListener {
         override fun onPeerClicked(peer: WifiP2pDevice) {
             Timber.d("onPeerClicked " + peer.toString())
-            (activity.application as WDApplication).wifiP2pManager = wifiP2pManager
-            (activity.application as WDApplication).channel = channel
-
             val intent = Intent(activity, PeerDetailsActivity::class.java)
             intent.putExtra("x", peer.deviceName)
             intent.putExtra("y", peer.deviceAddress)
             startActivity(intent)
         }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
-        wifiP2pManager = activity.getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager
-        channel = wifiP2pManager.initialize(activity, Looper.getMainLooper(), object : WifiP2pManager.ChannelListener {
-            override fun onChannelDisconnected() {
-                throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-            }
-        })
-
-
-        wifiDirectReceiver = WifiDirectReceiver(wifiP2pManager, channel, activity, object : WifiP2pManager.PeerListListener {
-            override fun onPeersAvailable(peers: WifiP2pDeviceList?) {
-                Timber.d("peers: " + peers?.toString())
-//                val start = adapter.data.size
-//                adapter.data.clear()
-//                adapter.data.addAll(peers?.deviceList!!)
-//                adapter.notifyItemRangeInserted(start, adapter.data.size)
-
-            }
-        })
-    }
-
-    private fun createIntentFilter(): IntentFilter {
-        val filter = IntentFilter()
-        filter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION)
-        filter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION)
-        filter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION)
-        filter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION)
-        filter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION)
-        return filter
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -87,11 +50,15 @@ class PeersFragment : Fragment() {
         rvPeers.layoutManager = LinearLayoutManager(activity)
         view?.findViewById(R.id.peers_btn_start_discovery)?.setOnClickListener { startDiscovery() }
         view?.findViewById(R.id.peers_btn_create_group)?.setOnClickListener { createGroup() }
+        view?.findViewById(R.id.peers_btn_create_access_point)?.setOnClickListener { createAccessPoint() }
         return view;
     }
 
+    private fun createAccessPoint() {
+    }
+
     private fun startDiscovery() {
-        WifiPeersDiscoverer(activity, wifiP2pManager, channel, object : WifiPeersDiscoverer.OnPeerListener {
+        WifiPeersDiscoverer(activity, wifiDirectState.wifiDirectInfo.wifiP2pManager, wifiDirectState.wifiDirectInfo.channel, object : WifiPeersDiscoverer.OnPeerListener {
             override fun onDiscovered(peer: WifiP2pDevice) {
                 Timber.d(" New peer ${peer.toString()}")
 //                adapter.data.clear()
@@ -103,28 +70,51 @@ class PeersFragment : Fragment() {
     }
 
     private fun createGroup() {
-        //TODO create a group
-        wifiP2pManager.createGroup(channel, object : WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                Timber.d("group successfully created")
-            }
+        setDeviceName(DEVICE_NAME)
+        wifiDirectState.wifiDirectInfo.wifiP2pManager.createGroup(wifiDirectState.wifiDirectInfo.channel,
+                object : DefaultActionListener("group successfully created", "group creation failed") {
+                    override fun onSuccess() {
+                        super.onSuccess()
+                        startServer()
+                    }
 
-            override fun onFailure(reason: Int) {
-                Timber.d("group creation failed. reason $reason ")
-//                throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-            }
-        })
+                    override fun onFailure(reason: Int) {
+                        super.onFailure(reason)
+                        removeGroup()
+                    }
+                })
     }
 
-    override fun onResume() {
-        super.onResume()
-        activity.registerReceiver(wifiDirectReceiver, createIntentFilter())
+    //TODO move to into another object
+    private fun removeGroup() {
+        wifiDirectState.wifiDirectInfo.wifiP2pManager.removeGroup(wifiDirectState.wifiDirectInfo.channel,
+                object : DefaultActionListener("group successfully removed", "group deletion failed") {
+                    override fun onSuccess() {
+                        super.onSuccess()
+                        createGroup()
+                    }
+
+                    override fun onFailure(reason: Int) {
+                        super.onFailure(reason)
+                    }
+                })
     }
 
+    private fun startServer() {
+        if (serverStarted) {
+            throw RuntimeException("Server already started")
+        }
+        serverStarted = true
+        ServerAsyncTask().execute()
+    }
 
-    override fun onPause() {
-        super.onPause()
-        activity.unregisterReceiver(wifiDirectReceiver)
+    fun setDeviceName(deviceName: String) {
+        val m = wifiDirectState.wifiDirectInfo.wifiP2pManager.javaClass.getMethod(
+                "setDeviceName",
+                *arrayOf(WifiP2pManager.Channel::class.java, String::class.java, WifiP2pManager.ActionListener::class.java))
+
+        m.invoke(wifiDirectState.wifiDirectInfo.wifiP2pManager, wifiDirectState.wifiDirectInfo.channel,
+                deviceName, DefaultActionListener("Device name changed", "Device name NOT changed"))
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {

@@ -11,6 +11,7 @@ class DataTransferService : IntentService("DataTransferService") {
     companion object {
         val ACTION_SEND_DATA = "org.thaliproject.p2p.wifidirectdemo.SEND_DATA"
         val GO_ADDRESS = "go_address"
+        val GROUP_PARTICIPANTS_IPS = "group_participants_ips"
         val GO_PORT = "go_port"
         val PORT = 8890
         private val data = "He_l_l_o_O"
@@ -27,6 +28,8 @@ class DataTransferService : IntentService("DataTransferService") {
                 Timber.d("connected")
 
                 socket.outputStream.write(data.toByteArray())
+
+
             } finally {
                 socket.close()
             }

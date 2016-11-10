@@ -12,8 +12,9 @@ class ServerAsyncTask : AsyncTask<Void, Void, String>() {
         Timber.d("Socket opened")
         val client = serverSocket.accept()
         Timber.d("Connection done")
-        return readData(client.inputStream)
-
+        val dataFromClient = readData(client.inputStream)
+        client.outputStream.write("Accepted!".toByteArray())
+        return dataFromClient
     }
 
     override fun onPostExecute(result: String?) {

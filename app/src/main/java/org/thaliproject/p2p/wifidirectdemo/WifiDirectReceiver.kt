@@ -11,12 +11,11 @@ import android.support.v4.app.FragmentActivity
 import android.util.Log
 import timber.log.Timber
 
-class WifiDirectReceiver(val wifiP2pManager: WifiP2pManager,
-                         val channel: WifiP2pManager.Channel,
-                         val activity: FragmentActivity,
-                         val peerListListener: WifiP2pManager.PeerListListener,
-                         val connectionInfoListener: WifiP2pManager.ConnectionInfoListener?) : BroadcastReceiver() {
+class WifiDirectReceiver(val wifiDirectInfo: WifiDirectInfo) : BroadcastReceiver() {
 
+    var connectionInfoListener: WifiP2pManager.ConnectionInfoListener? = null
+    var connectionListener: ConnectionListener? = null
+//    var connectionInfoListener: WifiP2pManager.ConnectionInfoListener? = null
 
     override fun onReceive(context: Context?, intent: Intent?) {
         val action = intent?.action
@@ -38,16 +37,19 @@ class WifiDirectReceiver(val wifiP2pManager: WifiP2pManager,
 
                 if (networkInfo != null && networkInfo.isConnected) {
 //                    if (con)
-                    wifiP2pManager.requestConnectionInfo(channel, object : WifiP2pManager.ConnectionInfoListener {
-                        override fun onConnectionInfoAvailable(info: WifiP2pInfo?) {
-                            if (info != null) {
-                                if (info.isGroupOwner) {
-                                    Timber.d("Start server")
-                                    startServer()
+
+                    wifiDirectInfo.wifiP2pManager.requestConnectionInfo(wifiDirectInfo.channel,
+                            object : WifiP2pManager.ConnectionInfoListener {
+                                override fun onConnectionInfoAvailable(info: WifiP2pInfo?) {
+                                    if (info != null) {
+                                        connectionListener?.onConnected(info)
+                                    } else {
+                                        throw IllegalArgumentException("empty WifiP2pInfo")
+                                    }
                                 }
-                            }
-                        }
-                    })
+                            })
+                } else {
+                    connectionListener?.onDisconnected()
                 }
             }
             WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION -> {
@@ -61,10 +63,6 @@ class WifiDirectReceiver(val wifiP2pManager: WifiP2pManager,
 
 
         }
-    }
-
-    private fun startServer() {
-        ServerAsyncTask().execute()
     }
 
 
