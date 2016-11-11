@@ -7,5 +7,6 @@
     <string name="connect">Connect</string>
     <string name="send_data">Send data</string>
     <string name="create_access_point">Create access point</string>
+    <string name="disconnect">Disconnect</string>
 
 </resources>

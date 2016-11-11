@@ -52,8 +52,19 @@ class PeerDetailsFragment : BaseFragment() {
         val v = inflater?.inflate(R.layout.fragment_peer_details, container, false)
         (v!!.findViewById(R.id.peer_details_tv_name) as TextView).text = deviceName
         v.findViewById(R.id.peer_details_btn_connect).setOnClickListener { connect() }
+        v.findViewById(R.id.peer_details_btn_disconnect).setOnClickListener { disconnect() }
         v.findViewById(R.id.peer_details_btn_send_data).setOnClickListener { sendData() }
         return v;
+    }
+
+    private fun disconnect() {
+        Timber.d("connect")
+        wifiDirectState.addConnectionInfoListener(WifiP2pManager.ConnectionInfoListener {
+            info ->
+            Timber.d(" Listener Connection info: $info")
+        })
+        wifiDirectState.wifiDirectInfo.wifiP2pManager.removeGroup(wifiDirectState.wifiDirectInfo.channel,
+                DefaultActionListener("Group removed successfully!", "Group deletion failed!"))
     }
 
     private fun connect() {
@@ -69,22 +80,23 @@ class PeerDetailsFragment : BaseFragment() {
     private fun getGroupInfo() {
         wifiDirectState.getGroupInfo(object : WifiP2pManager.GroupInfoListener {
             override fun onGroupInfoAvailable(group: WifiP2pGroup?) {
-               if (group != null){
-                   groupIps = group.clientList.map { it -> it.deviceAddress }
-               } else {
-                   throw IllegalArgumentException("empty group info")
-               }
+                if (group != null) {
+                    groupIps = group.clientList.map { it -> it.deviceAddress }
+                } else {
+                    throw IllegalArgumentException("empty group info")
+                }
             }
         })
     }
 
     private fun sendData() {
-        val startIntent = Intent(activity, DataTransferService::class.java)
-        startIntent.action = DataTransferService.ACTION_SEND_DATA
-        startIntent.putExtra(DataTransferService.GO_ADDRESS, groupOwnerAddress)
+//        val startIntent = Intent(activity, DataTransferService::class.java)
+//        startIntent.action = DataTransferService.ACTION_SEND_DATA
+//        startIntent.putExtra(DataTransferService.GO_ADDRESS, groupOwnerAddress)
 //        startIntent.putExtra(DataTransferService.GO_g)
 
-        activity.startService(startIntent)
+//        activity.startService(startIntent)
+        ClientAsyncTask(wifiDirectState.wifiDirectInfo, groupOwnerAddress).execute()
     }
 
 }

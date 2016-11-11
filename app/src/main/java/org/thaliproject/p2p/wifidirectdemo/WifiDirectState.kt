@@ -1,12 +1,9 @@
 package org.thaliproject.p2p.wifidirectdemo
 
-import android.content.Context
 import android.net.wifi.WpsInfo
 import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
-import java.net.NetworkInterface
-import java.util.*
 
 class WifiDirectState(val wifiDirectInfo: WifiDirectInfo, val stateReceiver: WifiDirectReceiver) :
         ConnectionListener {
@@ -69,58 +66,5 @@ class WifiDirectState(val wifiDirectInfo: WifiDirectInfo, val stateReceiver: Wif
         wifiDirectInfo.wifiP2pManager.requestGroupInfo(wifiDirectInfo.channel, groupInfoListener)
     }
 
-
-//    fun getIpAddress(): String {
-//        try {
-//            val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
-//            /*
-//         * for (NetworkInterface networkInterface : interfaces) { Log.v(TAG,
-//         * "interface name " + networkInterface.getName() + "mac = " +
-//         * getMACAddress(networkInterface.getName())); }
-//         */
-//
-//            for (intf in interfaces) {
-//                if (!getMACAddress(intf.getName()).equalsIgnoreCase(
-//                        Globals.thisDeviceAddress)) {
-//                    // Log.v(TAG, "ignore the interface " + intf.getName());
-//                    // continue;
-//                }
-//                if (!intf.getName().contains("p2p"))
-//                    continue
-//
-//                Log.v(TAG,
-//                        intf.getName() + "   " + getMACAddress(intf.getName()))
-//
-//                val addrs = Collections.list(intf.getInetAddresses())
-//
-//                for (addr in addrs) {
-//                    // Log.v(TAG, "inside");
-//
-//                    if (!addr.isLoopbackAddress()) {
-//                        // Log.v(TAG, "isnt loopback");
-//                        val sAddr = addr.getHostAddress().toUpperCase()
-//                        Log.v(TAG, "ip=" + sAddr)
-//
-//                        val isIPv4 = InetAddressUtils.isIPv4Address(sAddr)
-//
-//                        if (isIPv4) {
-//                            if (sAddr.contains("192.168.49.")) {
-//                                Log.v(TAG, "ip = " + sAddr)
-//                                return sAddr
-//                            }
-//                        }
-//
-//                    }
-//
-//                }
-//            }
-//
-//        } catch (ex: Exception) {
-//            Log.v(TAG, "error in parsing")
-//        }
-//        // for now eat exceptions
-//        Log.v(TAG, "returning empty ip address")
-//        return ""
-//    }
 
 }
