@@ -18,6 +18,7 @@ import android.widget.Toast
 import org.thaliproject.p2p.wifidirectdemo.*
 import org.thaliproject.p2p.wifidirectdemo.peers.details.PeerDetailsActivity
 import org.thaliproject.p2p.wifidirectdemo.peers.service.DemoService
+import org.thaliproject.p2p.wifidirectdemo.service.ipdiscovery.GroupIpsProvider
 import timber.log.Timber
 
 
@@ -105,7 +106,7 @@ class PeersFragment : BaseFragment() {
             throw RuntimeException("Server already started")
         }
         serverStarted = true
-        ServerAsyncTask().execute()
+        GroupIpsProvider(activity.applicationContext).execute()
     }
 
     fun setDeviceName(deviceName: String) {

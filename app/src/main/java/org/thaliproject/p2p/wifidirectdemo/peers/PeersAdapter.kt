@@ -2,13 +2,11 @@ package org.thaliproject.p2p.wifidirectdemo.peers
 
 import android.net.wifi.p2p.WifiP2pDevice
 import android.support.v7.widget.RecyclerView
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import org.thaliproject.p2p.wifidirectdemo.R
-import org.thaliproject.p2p.wifidirectdemo.WDLog
 import timber.log.Timber
 
 class PeersAdapter(val data: MutableList<WifiP2pDevice>, val onPeerClickListener: OnPeerClickListener) :

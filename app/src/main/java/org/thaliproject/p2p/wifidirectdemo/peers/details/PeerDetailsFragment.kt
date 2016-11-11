@@ -1,22 +1,21 @@
 package org.thaliproject.p2p.wifidirectdemo.peers.details
 
-import android.content.Context
-import android.content.Intent
-import android.net.ConnectivityManager
-import android.net.NetworkInfo
-import android.net.wifi.WpsInfo
-import android.net.wifi.p2p.WifiP2pConfig
-import android.net.wifi.p2p.WifiP2pGroup
-import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.Bundle
-import android.os.Handler
-import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
-import org.thaliproject.p2p.wifidirectdemo.*
+import org.thaliproject.p2p.wifidirectdemo.BaseFragment
+import org.thaliproject.p2p.wifidirectdemo.DefaultActionListener
+import org.thaliproject.p2p.wifidirectdemo.R
+import org.thaliproject.p2p.wifidirectdemo.service.ipdiscovery.GetIpsAsyncTask
+import org.thaliproject.p2p.wifidirectdemo.service.ipdiscovery.GroupIpAddressesListener
+import org.thaliproject.p2p.wifidirectdemo.service.ipdiscovery.GroupIpsInfo
+import org.thaliproject.p2p.wifidirectdemo.service.messaging.Message
+import org.thaliproject.p2p.wifidirectdemo.service.messaging.MessagingServer
+import org.thaliproject.p2p.wifidirectdemo.service.messaging.SendMessageRunnable
 import timber.log.Timber
 
 class PeerDetailsFragment : BaseFragment() {
@@ -40,7 +39,9 @@ class PeerDetailsFragment : BaseFragment() {
     private lateinit var deviceAddress: String
     private lateinit var groupOwnerAddress: String
 
-    private lateinit var groupIps: List<String>
+    private lateinit var btnSendData: Button
+    private lateinit var btnConnect: Button
+    private lateinit var btnDisconnect: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,9 +52,16 @@ class PeerDetailsFragment : BaseFragment() {
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val v = inflater?.inflate(R.layout.fragment_peer_details, container, false)
         (v!!.findViewById(R.id.peer_details_tv_name) as TextView).text = deviceName
-        v.findViewById(R.id.peer_details_btn_connect).setOnClickListener { connect() }
-        v.findViewById(R.id.peer_details_btn_disconnect).setOnClickListener { disconnect() }
-        v.findViewById(R.id.peer_details_btn_send_data).setOnClickListener { sendData() }
+        btnConnect = v.findViewById(R.id.peer_details_btn_connect) as Button
+        btnConnect.setOnClickListener { connect() }
+        btnDisconnect = v.findViewById(R.id.peer_details_btn_disconnect) as Button
+        btnDisconnect.setOnClickListener { disconnect() }
+        btnSendData = v.findViewById(R.id.peer_details_btn_send_data) as Button
+        val msg = if (System.currentTimeMillis() % 2 == 0L) Message.HELLO else Message.HI
+        btnSendData.setOnClickListener { sendToAllPeers(msg) }
+
+        disableSendData()
+        enableConnect()
         return v;
     }
 
@@ -73,30 +81,52 @@ class PeerDetailsFragment : BaseFragment() {
             info ->
             Timber.d(" Listener Connection info: $info")
             groupOwnerAddress = info.groupOwnerAddress.hostAddress
+            disableConnect()
+            getIps()
         })
         wifiDirectState.connectTo(deviceAddress, DefaultActionListener("Connected to $deviceAddress!", "Not connected to $deviceAddress"))
     }
 
-    private fun getGroupInfo() {
-        wifiDirectState.getGroupInfo(object : WifiP2pManager.GroupInfoListener {
-            override fun onGroupInfoAvailable(group: WifiP2pGroup?) {
-                if (group != null) {
-                    groupIps = group.clientList.map { it -> it.deviceAddress }
-                } else {
-                    throw IllegalArgumentException("empty group info")
-                }
-            }
-        })
+    private fun enableSendData() {
+        btnSendData.visibility = View.VISIBLE
     }
 
-    private fun sendData() {
-//        val startIntent = Intent(activity, DataTransferService::class.java)
-//        startIntent.action = DataTransferService.ACTION_SEND_DATA
-//        startIntent.putExtra(DataTransferService.GO_ADDRESS, groupOwnerAddress)
-//        startIntent.putExtra(DataTransferService.GO_g)
+    private fun disableSendData() {
+        btnSendData.visibility = View.INVISIBLE
+    }
 
-//        activity.startService(startIntent)
-        ClientAsyncTask(wifiDirectState.wifiDirectInfo, groupOwnerAddress).execute()
+    private fun enableConnect() {
+        btnConnect.visibility = View.VISIBLE
+        btnDisconnect.visibility = View.INVISIBLE
+    }
+
+    private fun disableConnect() {
+        btnConnect.visibility = View.INVISIBLE
+        btnDisconnect.visibility = View.VISIBLE
+    }
+
+    private fun getIps() {
+        Timber.d("Get Ips")
+        GetIpsAsyncTask(wifiDirectState.wifiDirectInfo, groupOwnerAddress, object : GroupIpAddressesListener {
+            override fun onGroupIpAddressesReceived(ipAddresses: List<String>) {
+                app.groupIpsInfo = GroupIpsInfo(groupOwnerAddress, ipAddresses)
+                startMessagingServer()
+                enableSendData()
+            }
+        }).execute()
+    }
+
+    private fun startMessagingServer() {
+        MessagingServer(app.applicationContext).execute()
+    }
+
+    private fun sendToAllPeers(message: Message) {
+        //TODO update peers before sending message
+        for (address in app.groupIpsInfo.peers) {
+            if (address != wifiDirectState.wifiDirectInfo.ipInfo.currentIp) { //TODO move to groupIpInfo?
+                Thread(SendMessageRunnable(wifiDirectState.wifiDirectInfo, address, message)).start()
+            }
+        }
     }
 
 }

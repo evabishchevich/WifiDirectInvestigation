@@ -5,12 +5,15 @@ import android.content.Context
 import android.content.IntentFilter
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.Looper
+import org.thaliproject.p2p.wifidirectdemo.service.ipdiscovery.GroupIpsInfo
 import timber.log.Timber
 
 class WDApplication : Application() {
 
     lateinit var wifiDirectState: WifiDirectState
         private set
+
+    lateinit var groupIpsInfo: GroupIpsInfo
 
     override fun onCreate() {
         super.onCreate()
