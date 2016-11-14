@@ -6,6 +6,7 @@ import android.content.IntentFilter
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pDeviceList
 import android.net.wifi.p2p.WifiP2pManager
+import android.os.AsyncTask
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -106,7 +107,7 @@ class PeersFragment : BaseFragment() {
             throw RuntimeException("Server already started")
         }
         serverStarted = true
-        GroupIpsProvider(activity.applicationContext).execute()
+        GroupIpsProvider(activity.applicationContext).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
     }
 
     fun setDeviceName(deviceName: String) {

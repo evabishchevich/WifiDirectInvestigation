@@ -1,6 +1,9 @@
 package org.thaliproject.p2p.wifidirectdemo.peers.details
 
+import android.net.wifi.p2p.WifiP2pGroup
+import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
+import android.os.AsyncTask
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +20,7 @@ import org.thaliproject.p2p.wifidirectdemo.service.messaging.Message
 import org.thaliproject.p2p.wifidirectdemo.service.messaging.MessagingServer
 import org.thaliproject.p2p.wifidirectdemo.service.messaging.SendMessageRunnable
 import timber.log.Timber
+import java.util.concurrent.ThreadPoolExecutor
 
 class PeerDetailsFragment : BaseFragment() {
 
@@ -79,12 +83,34 @@ class PeerDetailsFragment : BaseFragment() {
         Timber.d("connect")
         wifiDirectState.addConnectionInfoListener(WifiP2pManager.ConnectionInfoListener {
             info ->
-            Timber.d(" Listener Connection info: $info")
+            processGroupInfo(info)
+        })
+        wifiDirectState.connectTo(deviceAddress, object : DefaultActionListener("Connected to $deviceAddress!", "Not connected to $deviceAddress") {
+            override fun onSuccess() {
+                super.onSuccess()
+//                wifiDirectState.wifiDirectInfo.wifiP2pManager.requestConnectionInfo(wifiDirectState.wifiDirectInfo.channel, {
+//                    info ->
+//                    processGroupInfo(info)
+//                })
+            }
+        })
+    }
+
+    private fun processGroupInfo(info: WifiP2pInfo) {
+        Timber.d(" Listener Connection info: $info")
+//        if (info.groupOwnerAddress != null) {
             groupOwnerAddress = info.groupOwnerAddress.hostAddress
             disableConnect()
-            getIps()
-        })
-        wifiDirectState.connectTo(deviceAddress, DefaultActionListener("Connected to $deviceAddress!", "Not connected to $deviceAddress"))
+            getIps(object : GroupIpAddressesListener {
+                override fun onGroupIpAddressesReceived(ipAddresses: List<String>) {
+                    app.groupIpsInfo = GroupIpsInfo(groupOwnerAddress, ipAddresses)
+                    startMessagingServer()
+                    enableSendData()
+                }
+            })
+            //TODO remove listener
+//            wifiDirectState.removeConnectionInfoListener()
+//        }
     }
 
     private fun enableSendData() {
@@ -105,28 +131,30 @@ class PeerDetailsFragment : BaseFragment() {
         btnDisconnect.visibility = View.VISIBLE
     }
 
-    private fun getIps() {
+    private fun getIps(listener: GroupIpAddressesListener) {
         Timber.d("Get Ips")
-        GetIpsAsyncTask(wifiDirectState.wifiDirectInfo, groupOwnerAddress, object : GroupIpAddressesListener {
-            override fun onGroupIpAddressesReceived(ipAddresses: List<String>) {
-                app.groupIpsInfo = GroupIpsInfo(groupOwnerAddress, ipAddresses)
-                startMessagingServer()
-                enableSendData()
-            }
-        }).execute()
+        val x = GetIpsAsyncTask(wifiDirectState.wifiDirectInfo, groupOwnerAddress, listener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
     }
 
     private fun startMessagingServer() {
-        MessagingServer(app.applicationContext).execute()
+        //TODO make it just thread, because we can't execute any other async task while executing this one
+        MessagingServer(app.applicationContext).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
     }
 
     private fun sendToAllPeers(message: Message) {
-        //TODO update peers before sending message
-        for (address in app.groupIpsInfo.peers) {
-            if (address != wifiDirectState.wifiDirectInfo.ipInfo.currentIp) { //TODO move to groupIpInfo?
-                Thread(SendMessageRunnable(wifiDirectState.wifiDirectInfo, address, message)).start()
+        Timber.d("sendToAllPeers")
+        getIps(object : GroupIpAddressesListener {
+            override fun onGroupIpAddressesReceived(ipAddresses: List<String>) {
+                Timber.d("onGroupIpAddressesReceived ${ipAddresses}")
+                app.groupIpsInfo = GroupIpsInfo(groupOwnerAddress, ipAddresses)
+                for (address in app.groupIpsInfo.peers) {
+                    if (address != wifiDirectState.wifiDirectInfo.ipInfo.currentIp) { //TODO move to groupIpInfo?
+                        Timber.d("send to  $address")
+                        Thread(SendMessageRunnable(wifiDirectState.wifiDirectInfo, address, message)).start()
+                    }
+                }
             }
-        }
+        })
     }
 
 }

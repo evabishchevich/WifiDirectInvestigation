@@ -11,6 +11,8 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.CopyOnWriteArrayList
 
+
+//TODO make it just thread, because we can't execute any other async task while executing this one
 class GroupIpsProvider(val ctx: Context) : AsyncTask<Void, String, Unit>() {
     companion object {
         private val READ_TIMEOUT = 5000
@@ -58,7 +60,9 @@ class GroupIpsProvider(val ctx: Context) : AsyncTask<Void, String, Unit>() {
     inner class Client(val client: Socket) : Runnable {
 
         override fun run() {
-            groupIps.add(client.inetAddress.hostAddress)
+            if (!groupIps.contains(client.inetAddress.hostAddress)) {
+                groupIps.add(client.inetAddress.hostAddress)
+            }
             Timber.d(client.inetAddress.hostAddress)
             Timber.d("Connection done")
             val giveIps = readData(client.inputStream)

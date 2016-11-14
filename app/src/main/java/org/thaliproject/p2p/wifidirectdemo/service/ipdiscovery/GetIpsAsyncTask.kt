@@ -19,6 +19,7 @@ class GetIpsAsyncTask(val wifiDirectInfo: WifiDirectInfo, val groupOwnerAddress:
         val port = GroupSettings.GROUP_IPS_PROVIDER_PORT
         val socket = Socket()
         try {
+            Timber.d("Try to connect")
             socket.connect(InetSocketAddress(groupOwnerAddress, port), GroupSettings.CONNECTION_TIMEOUT)
             Timber.d("connected to$groupOwnerAddress")
             wifiDirectInfo.ipInfo = IpInfo(socket.localAddress.hostAddress)
