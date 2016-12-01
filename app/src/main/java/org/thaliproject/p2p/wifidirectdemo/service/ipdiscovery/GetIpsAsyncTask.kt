@@ -7,6 +7,7 @@ import org.thaliproject.p2p.wifidirectdemo.service.GroupSettings
 import org.thaliproject.p2p.wifidirectdemo.service.messaging.Message
 import timber.log.Timber
 import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
@@ -27,6 +28,9 @@ class GetIpsAsyncTask(val wifiDirectInfo: WifiDirectInfo, val groupOwnerAddress:
             socket.outputStream.write(Message.GET_IPS.data.toByteArray())
             Timber.d("${Message.GET_IPS.data} was written")
             return readData(socket.inputStream)
+        } catch (e: IOException) {
+            Timber.e(e)
+            return arrayListOf()
         } finally {
             socket.close()
         }

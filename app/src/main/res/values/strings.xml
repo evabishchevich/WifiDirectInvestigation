@@ -8,5 +8,8 @@
     <string name="send_data">Send data</string>
     <string name="create_access_point">Create access point</string>
     <string name="disconnect">Disconnect</string>
+    <string name="get_group_info">get group info</string>
+    <string name="connect_to_ap">Connect to AP</string>
+    <string name="send_multicast">Send multicast</string>
 
 </resources>

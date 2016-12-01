@@ -3,8 +3,10 @@ package org.thaliproject.p2p.wifidirectdemo.peers
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.wifi.WifiManager
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pDeviceList
+import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.AsyncTask
 import android.os.Bundle
@@ -20,6 +22,7 @@ import org.thaliproject.p2p.wifidirectdemo.*
 import org.thaliproject.p2p.wifidirectdemo.peers.details.PeerDetailsActivity
 import org.thaliproject.p2p.wifidirectdemo.peers.service.DemoService
 import org.thaliproject.p2p.wifidirectdemo.service.ipdiscovery.GroupIpsProvider
+import org.thaliproject.p2p.wifidirectdemo.service.messaging.MulticastMessageListener
 import timber.log.Timber
 
 
@@ -77,7 +80,10 @@ class PeersFragment : BaseFragment() {
                 object : DefaultActionListener("group successfully created", "group creation failed") {
                     override fun onSuccess() {
                         super.onSuccess()
+                        requestGroupInfo()
                         startServer()
+                        //TODO temp start multicast listener
+//                        startMulticastsListening()
                     }
 
                     override fun onFailure(reason: Int) {
@@ -85,6 +91,11 @@ class PeersFragment : BaseFragment() {
                         removeGroup()
                     }
                 })
+    }
+
+    private fun startMulticastsListening() {
+        val wifiManager = activity.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        Thread(MulticastMessageListener(wifiManager)).start()
     }
 
     //TODO move to into another object
@@ -110,6 +121,13 @@ class PeersFragment : BaseFragment() {
         GroupIpsProvider(activity.applicationContext).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
     }
 
+    private fun requestGroupInfo() {
+        wifiDirectState.wifiDirectInfo.wifiP2pManager.requestGroupInfo(wifiDirectState.wifiDirectInfo.channel) {
+            group ->
+            Timber.d("Group info available $group")
+        }
+    }
+
     fun setDeviceName(deviceName: String) {
         val m = wifiDirectState.wifiDirectInfo.wifiP2pManager.javaClass.getMethod(
                 "setDeviceName",
@@ -132,6 +150,5 @@ class PeersFragment : BaseFragment() {
         }
         return super.onOptionsItemSelected(item)
     }
-
 
 }

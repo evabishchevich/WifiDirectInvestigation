@@ -19,7 +19,9 @@ class WifiPeersDiscoverer(val ctx: Context, val wifiP2PManager: WifiP2pManager, 
                 if (DemoService.SERVICE_NAME.equals(instanceName)) {
                     Timber.d("device  Y = " + srcDevice?.deviceName)
                     if (srcDevice != null) {
-                        peerListener.onDiscovered(srcDevice)
+                        if (srcDevice.isGroupOwner) {
+                            peerListener.onDiscovered(srcDevice)
+                        }
                     } else {
                         throw IllegalArgumentException("srcDevice is null")
                     }
