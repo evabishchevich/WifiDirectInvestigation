@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
-
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
 
     <TextView
         android:id="@+id/peer_details_tv_name"
@@ -15,18 +11,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/connect" />
-
-    <Button
-        android:id="@+id/peer_details_btn_get_group_info"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/get_group_info" />
-
-    <Button
-        android:id="@+id/peer_details_btn_connect_to_ap"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/connect_to_ap" />
 
     <Button
         android:id="@+id/peer_details_btn_disconnect"
@@ -46,4 +30,4 @@
         android:layout_height="wrap_content"
         android:text="@string/send_multicast" />
 
-</LinearLayout>
+</merge>

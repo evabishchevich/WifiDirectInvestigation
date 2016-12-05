@@ -1,12 +1,11 @@
 package org.thaliproject.p2p.wifidirectdemo.service.messaging
 
-import android.content.Context
 import android.net.wifi.WifiManager
 import org.thaliproject.p2p.wifidirectdemo.service.MulticastSettings
 import timber.log.Timber
 import java.net.*
 
-class MulticastMessageListener(val wifiManager: WifiManager) : Runnable {
+class MulticastMessageListener(val wifiManager: WifiManager, val isGroupOwner: Boolean) : Runnable {
 
     private val MULTICAST_LOCK_TAG = "org.thaliproject.p2p.wifidirectdemo.service.MULTICAST_LOCK_TAG"
 
@@ -23,7 +22,7 @@ class MulticastMessageListener(val wifiManager: WifiManager) : Runnable {
                 Timber.d("Network interface : $netInterface")
             }
             val socketAddr = InetSocketAddress(group, MulticastSettings.MULTICAST_PORT)
-            val netInt = NetworkInterface.getByName("wlan0")
+            val netInt = if (isGroupOwner) NetworkInterface.getByName("p2p-wlan0-0") else NetworkInterface.getByName("wlan0")
             Timber.d("Network interface: $netInt")
             receiveSocket.joinGroup(socketAddr, netInt)
 //            receiveSocket.joinGroup(group)

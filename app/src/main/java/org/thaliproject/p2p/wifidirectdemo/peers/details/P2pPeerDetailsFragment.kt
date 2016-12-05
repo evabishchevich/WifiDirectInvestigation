@@ -29,21 +29,34 @@ import org.thaliproject.p2p.wifidirectdemo.service.messaging.*
 import timber.log.Timber
 import java.util.concurrent.ThreadPoolExecutor
 
-class PeerDetailsFragment : BaseFragment() {
+class P2pPeerDetailsFragment : BaseFragment() {
 
     companion object {
 
         private val DEVICE_NAME_KEY = "DEVICE_NAME"
         private val DEVICE_ADDRESS_KEY = "DEVICE_ADDRESS"
+//        private val SSID_KEY = "SSID_KEY"
+//        private val P2P_KEY = "P2P_KEY"
+//        private val DEVICE_ADDRESS_KEY = "DEVICE_ADDRESS"
 
-        fun newInstance(deviceName: String, deviceAddress: String): PeerDetailsFragment {
+        fun newInstance(deviceName: String, deviceAddress: String): P2pPeerDetailsFragment {
             val args = Bundle()
             args.putString(DEVICE_NAME_KEY, deviceName)
             args.putString(DEVICE_ADDRESS_KEY, deviceAddress)
-            val fragment = PeerDetailsFragment()
+//            args.putBoolean(P2P_KEY, true)
+            val fragment = P2pPeerDetailsFragment()
             fragment.arguments = args
             return fragment
         }
+//
+//        fun newInstance(ssid: String): P2pPeerDetailsFragment {
+//            val args = Bundle()
+//            args.putString(SSID_KEY, ssid)
+//            args.putBoolean(P2P_KEY, false)
+//            val fragment = P2pPeerDetailsFragment()
+//            fragment.arguments = args
+//            return fragment
+//        }
     }
 
     private lateinit var deviceName: String
@@ -54,7 +67,6 @@ class PeerDetailsFragment : BaseFragment() {
     private lateinit var btnConnect: Button
     private lateinit var btnDisconnect: Button
 
-    private lateinit var btnConnectToAP: Button
     private lateinit var btnSendMulticast: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,7 +76,7 @@ class PeerDetailsFragment : BaseFragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val v = inflater?.inflate(R.layout.fragment_peer_details, container, false)
+        val v = inflater?.inflate(R.layout.fragment_p2p_peer_details, container, false)
         (v!!.findViewById(R.id.peer_details_tv_name) as TextView).text = deviceName
         btnConnect = v.findViewById(R.id.peer_details_btn_connect) as Button
         btnConnect.setOnClickListener { connect() }
@@ -75,8 +87,6 @@ class PeerDetailsFragment : BaseFragment() {
         btnSendData.setOnClickListener { sendToAllPeers(msg) }
 
         v.findViewById(R.id.peer_details_btn_get_group_info).setOnClickListener { getGroupInfo() }
-        btnConnectToAP = v.findViewById(R.id.peer_details_btn_connect_to_ap) as Button
-        btnConnectToAP.setOnClickListener { connectToAP() }
         btnSendMulticast = v.findViewById(R.id.peer_details_btn_send_multicast) as Button
         btnSendMulticast.setOnClickListener { sendMulticast() }
 
@@ -129,28 +139,31 @@ class PeerDetailsFragment : BaseFragment() {
         val wifiConfig = WifiConfiguration()
         wifiConfig.SSID = "\"${GroupSettings.GROUP_SSID}\""
         wifiConfig.preSharedKey = "\"${GroupSettings.GROUP_PASSWORD}\""
-
+        wifiConfig.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
         registerWifiStateChangedReceiver()
 
         val wifiManager = activity.getSystemService(Context.WIFI_SERVICE) as WifiManager
         //remember id
         val netId = wifiManager.addNetwork(wifiConfig);
-        wifiManager.disconnect();
-        wifiManager.enableNetwork(netId, true);
-        return wifiManager.reconnect();
+        Timber.d("Disconnected: ${wifiManager.disconnect()}")
+        Timber.d("Enabled: ${wifiManager.enableNetwork(netId, true)}")
+//        Timber.d("Config is saved: ${wifiManager.saveConfiguration()}")
+        val reconnected = wifiManager.reconnect()
+        Timber.d("Reconnected: $reconnected")
+        return reconnected
     }
 
 
     val wifiStateChangedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-//            Timber.d("Intent ${intent?.action}")
+            Timber.d("Intent ${intent?.action}")
             if (intent?.action == WifiManager.SUPPLICANT_STATE_CHANGED_ACTION) {
                 val state = intent?.getParcelableExtra<SupplicantState>(WifiManager.EXTRA_NEW_STATE)
-//                Timber.d("onReceive: state  $state")
+                Timber.d("onReceive: state  $state")
                 if (state == SupplicantState.COMPLETED) {
                     val connectionInfo = (context?.getSystemService(Context.WIFI_SERVICE) as WifiManager).connectionInfo
                     val ssid = connectionInfo?.ssid
-//                    Timber.d("onReceive: ssid  $ssid")
+                    Timber.d("onReceive: ssid  $ssid")
                     if (ssid == "\"${GroupSettings.GROUP_SSID}\"") {
                         onConnectedToAP()
                     }
@@ -172,7 +185,7 @@ class PeerDetailsFragment : BaseFragment() {
 
     private fun startMulticastsListening() {
         val wifiManager = activity.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        Thread(MulticastMessageListener(wifiManager)).start()
+        Thread(MulticastMessageListener(wifiManager, false)).start()
     }
 
     private fun sendMulticast() {
@@ -190,12 +203,10 @@ class PeerDetailsFragment : BaseFragment() {
     }
 
     private fun enableMulticast() {
-        btnConnectToAP.visibility = View.INVISIBLE
         btnSendMulticast.visibility = View.VISIBLE
     }
 
     private fun disableMulticast() {
-        btnConnectToAP.visibility = View.VISIBLE
         btnSendMulticast.visibility = View.INVISIBLE
     }
 
