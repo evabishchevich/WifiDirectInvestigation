@@ -28,19 +28,18 @@ import org.thaliproject.p2p.wifidirectdemo.service.messaging.MulticastMessageLis
 import timber.log.Timber
 
 
-class PeersFragment : BaseFragment() {
+class PeersFragment : BaseFragment(), PeersContract.View, PeersContract.PermissionService {
 
     internal lateinit var peersAdapter: PeersAdapter
     private lateinit var rvPeers: RecyclerView
 
-    private var serverStarted = false
+    private val reqCode = 518
+
+    private lateinit var permissionListener: PeersContract.PermissionService.OnPermissionRequestListener
+
     private lateinit var wifiManager: WifiManager
+    private lateinit var peersPresenter: PeersPresenter
 
-    private lateinit var peersDiscoverer: PeersDiscoverer
-
-    companion object {
-        val DEVICE_NAME = "ThaliGroup"
-    }
 
     val p2pPeerClickListener = object : P2PPeersAdapter.OnPeerClickListener {
         override fun onPeerClicked(peer: WifiP2PPeer) {
@@ -59,7 +58,8 @@ class PeersFragment : BaseFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         wifiManager = activity.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        peersDiscoverer = WifiApDiscoverer(activity.applicationContext, wifiManager)
+        val peersDiscoverer = WifiApDiscoverer(activity.applicationContext, wifiManager)
+        peersPresenter = PeersPresenter(this, peersDiscoverer, this, wifiDirectState, wifiManager)
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -69,120 +69,18 @@ class PeersFragment : BaseFragment() {
         peersAdapter = adapter
         rvPeers.adapter = adapter
         rvPeers.layoutManager = LinearLayoutManager(activity)
-        view?.findViewById(R.id.peers_btn_start_discovery)?.setOnClickListener { startDiscovery() }
-        view?.findViewById(R.id.peers_btn_create_group)?.setOnClickListener { createGroup() }
+        view?.findViewById(R.id.peers_btn_start_discovery)?.setOnClickListener { peersPresenter.onStartDiscoveryClicked() }
+        view?.findViewById(R.id.peers_btn_create_group)?.setOnClickListener { peersPresenter.onCreateGroupClicked() }
 
         return view;
     }
 
-    private fun startRegularDiscovery() {
-        if (isLocationPermissionGiven()) {
-            peersDiscoverer.startDiscovery(object : PeersDiscoverer.PeersDiscoverListener {
-                override fun onPeersDiscovered(peers: List<Peer>) {
-                    Timber.d("onPeersDiscovered: peers = $peers")
-                    peersAdapter.data.clear()
-                    peersAdapter.data.addAll(peers)
-                    peersAdapter.notifyDataSetChanged()
-                }
-            })
-        } else {
-            askForLocationPermission()
-        }
+    override fun showGroupCredits(groupCredits: GroupCredits) {
+        (view?.findViewById(R.id.peers_tv_group_ssid) as TextView).text = groupCredits.networkName
+        (view?.findViewById(R.id.peers_tv_group_pass) as TextView).text = groupCredits.passphrase
     }
 
-    private fun isLocationPermissionGiven(): Boolean {
-        return ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private val reqCode = 518
-
-    private fun askForLocationPermission() {
-        requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), reqCode)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        if (requestCode == reqCode && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            startDiscovery()
-        }
-    }
-
-    private fun startDiscovery() {
-        startRegularDiscovery()
-    }
-
-    private fun startP2PDiscovery() {
-        WifiP2PPeersDiscoverer(wifiDirectState.wifiDirectInfo.wifiP2pManager, wifiDirectState.wifiDirectInfo.channel, object : WifiP2PPeersDiscoverer.OnPeerListener {
-            override fun onDiscovered(peer: WifiP2pDevice) {
-                Timber.d(" New peer $peer")
-                peersAdapter.data.add(WifiP2PPeer(peer))
-                peersAdapter.notifyDataSetChanged()
-            }
-        }).discoverSpecialService()
-//        Handler().postDelayed({ WifiP2PPeersDiscoverer(activity, wifiP2pManager, channel).discoverSpecialService() }, 3000L)
-    }
-
-    private fun createGroup() {
-        setDeviceName(DEVICE_NAME)
-        wifiDirectState.wifiDirectInfo.wifiP2pManager.createGroup(wifiDirectState.wifiDirectInfo.channel,
-                object : DefaultActionListener("group successfully created", "group creation failed") {
-                    override fun onSuccess() {
-                        super.onSuccess()
-                        requestGroupInfo()
-                        startServer()
-                        //TODO temp start multicast listener
-                        startMulticastsListening()
-                    }
-
-                    override fun onFailure(reason: Int) {
-                        super.onFailure(reason)
-                        removeGroup()
-                    }
-                })
-    }
-
-    private fun startMulticastsListening() {
-        val wifiManager = activity.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        Thread(MulticastMessageListener(wifiManager, true)).start()
-    }
-
-    //TODO move to into another object
-    private fun removeGroup() {
-        wifiDirectState.wifiDirectInfo.wifiP2pManager.removeGroup(wifiDirectState.wifiDirectInfo.channel,
-                object : DefaultActionListener("group successfully removed", "group deletion failed") {
-                    override fun onSuccess() {
-                        super.onSuccess()
-                        createGroup()
-                    }
-
-                    override fun onFailure(reason: Int) {
-                        super.onFailure(reason)
-                    }
-                })
-    }
-
-    private fun startServer() {
-        if (serverStarted) {
-//            throw RuntimeException("Server already started")
-            return
-        }
-        serverStarted = true
-        GroupIpsProvider(activity.applicationContext).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
-    }
-
-    private fun requestGroupInfo() {
-        wifiDirectState.wifiDirectInfo.wifiP2pManager.requestGroupInfo(wifiDirectState.wifiDirectInfo.channel) {
-            group ->
-            Timber.d("Group info available $group")
-            if (group == null) {
-                requestGroupInfo()
-            } else {
-                (view?.findViewById(R.id.peers_tv_group_ssid) as TextView).text = group.networkName
-                (view?.findViewById(R.id.peers_tv_group_pass) as TextView).text = group.passphrase
-            }
-        }
-    }
-
-    fun setDeviceName(deviceName: String) {
+    override fun setDeviceName(deviceName: String) {
         val m = wifiDirectState.wifiDirectInfo.wifiP2pManager.javaClass.getMethod(
                 "setDeviceName",
                 *arrayOf(WifiP2pManager.Channel::class.java, String::class.java, WifiP2pManager.ActionListener::class.java))
@@ -191,13 +89,30 @@ class PeersFragment : BaseFragment() {
                 deviceName, DefaultActionListener("Device name changed", "Device name NOT changed"))
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        inflater?.inflate(R.menu.menu_main, menu)
+    override fun showNewPeers(peers: List<Peer>) {
+        peersAdapter.data.clear()
+        peersAdapter.data.addAll(peers)
+        peersAdapter.notifyDataSetChanged()
     }
 
     override fun onStop() {
-        peersDiscoverer.onStop()
+        peersPresenter.onStop()
         super.onStop()
     }
 
+    override fun isLocationPermissionGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun requestLocationPermission(listener: PeersContract.PermissionService.OnPermissionRequestListener) {
+        requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), reqCode)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        if (requestCode == reqCode && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            permissionListener.onGranted()
+        } else if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
+            permissionListener.onDenied()
+        }
+    }
 }
