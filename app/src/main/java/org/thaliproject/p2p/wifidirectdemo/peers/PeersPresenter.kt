@@ -44,7 +44,7 @@ class PeersPresenter(val view: PeersContract.View, discoverer: PeersDiscoverer,
                     Timber.d("onPeersDiscovered: peers = $peers")
                     view.showNewPeers(peers)
                 }
-            })
+            }, false)
         } else {
             permissionService.requestLocationPermission(object : LocationPermissionService.OnPermissionRequestListener {
                 override fun onGranted() {

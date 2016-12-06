@@ -47,6 +47,7 @@ internal class WifiConnector(val ctx: Context, val wifiManager: WifiManager) {
     }
 
     fun connectTo(accessPoint: WifiAP, connectionListener: WifiService.ConnectionListener): Boolean {
+        Timber.d("Connect to $accessPoint")
         assignConnectionData(accessPoint, connectionListener)
         registerWifiStateChangedReceiver()
 

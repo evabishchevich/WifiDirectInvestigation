@@ -17,8 +17,7 @@ class TestPresenter(val view: TestContract.View,
                     val wifiService: WifiService,
                     val locationPermissionService: LocationPermissionService) : TestContract.Presenter {
 
-    private var startTime: Long = 0
-    private var finishTime: Long = 0
+    private val timer = Timer()
 
     override fun onStartServerClicked() {
         createGroup()
@@ -70,7 +69,7 @@ class TestPresenter(val view: TestContract.View,
 
     override fun onStartClientClicked() {
         if (locationPermissionService.isLocationPermissionGranted()) {
-            startTime = SystemClock.elapsedRealtime();
+            timer.start()
             startDiscovery()
         } else {
             locationPermissionService.requestLocationPermission(object : LocationPermissionService.OnPermissionRequestListener {
@@ -87,14 +86,17 @@ class TestPresenter(val view: TestContract.View,
     }
 
     private fun startDiscovery() {
+        Timber.d("start discovery")
         wifiService.findNetworks(object : WifiService.NetworksAvailableListener {
             override fun onNetworksAvailable(networks: List<WifiAP>) {
+                Timber.d("onNetworksAvailable, networks: $networks")
                 val wifiNetwork = networks.filter { it -> it.SSID.contains(Settings.DEVICE_NAME) }.first()
+                Timber.d("connect to : $wifiNetwork")
                 wifiService.connect(wifiNetwork, object : ConnectionListener {
                     override fun onConnected(wifiAP: WifiAP) {
+                        Timber.d("onConnected to : $wifiAP")
                         messagingService.startMessagingServer(false)
-                        finishTime = SystemClock.elapsedRealtime()
-                        view.showTotalDuration("Tital duration is ${finishTime - startTime} milliseconds")
+                        view.showTotalDuration("Total duration is ${timer.finish()} milliseconds")
                         //TODO send data
                         //TODO get data back
                     }

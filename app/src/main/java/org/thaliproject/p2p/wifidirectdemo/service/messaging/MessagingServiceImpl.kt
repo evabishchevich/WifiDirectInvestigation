@@ -3,6 +3,7 @@ package org.thaliproject.p2p.wifidirectdemo.service.messaging
 import android.content.Context
 import android.net.wifi.WifiManager
 import org.thaliproject.p2p.wifidirectdemo.WifiDirectInfo
+import timber.log.Timber
 
 class MessagingServiceImpl(ctx: Context, wifiManager: WifiManager, wifiDirectInfo: WifiDirectInfo) : MessagingService {
 
@@ -28,6 +29,7 @@ class MessagingServiceImpl(ctx: Context, wifiManager: WifiManager, wifiDirectInf
     }
 
     override fun startMessagingServer(isGroupOwner: Boolean) {
+        Timber.d("startMessagingServer. ${if (messagingServerStarted) "Already started" else ""}")
         if (!messagingServerStarted) {
             Thread(MulticastMessageListener(wifiManager, isGroupOwner))
         }

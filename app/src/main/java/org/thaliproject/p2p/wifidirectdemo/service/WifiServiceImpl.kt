@@ -60,7 +60,7 @@ class WifiServiceImpl(ctx: Context,
             override fun onPeersDiscovered(peers: List<Peer>) {
                 networksListener.onNetworksAvailable(peers.map { it -> it as WifiAP })
             }
-        })
+        }, false)
     }
 
     override fun connect(accessPoint: WifiAP, connectionListener: WifiService.ConnectionListener) {

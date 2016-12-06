@@ -2,7 +2,7 @@ package org.thaliproject.p2p.wifidirectdemo.peers
 
 interface PeersDiscoverer {
 
-    fun startDiscovery(listener: PeersDiscoverListener)
+    fun startDiscovery(listener: PeersDiscoverListener, unsubscribeAfterNotification: Boolean)
 
     fun onStop()
 
