@@ -10,7 +10,6 @@ import org.thaliproject.p2p.wifidirectdemo.BaseFragment
 import org.thaliproject.p2p.wifidirectdemo.DefaultActionListener
 import org.thaliproject.p2p.wifidirectdemo.GroupCredits
 import org.thaliproject.p2p.wifidirectdemo.R
-import org.thaliproject.p2p.wifidirectdemo.service.location.LocationPermissionService
 
 class TestFragment : BaseFragment(), TestContract.View {
 
@@ -38,7 +37,7 @@ class TestFragment : BaseFragment(), TestContract.View {
     }
 
     override fun showTotalDuration(duration: String) {
-        tvTotalDuration.text = duration
+        activity.runOnUiThread { tvTotalDuration.text = duration }
     }
 
     override fun setDeviceName(name: String) {
@@ -60,5 +59,13 @@ class TestFragment : BaseFragment(), TestContract.View {
 
     override fun showLoading() {
 
+    }
+
+    override fun disableStartClient() {
+        view?.findViewById(R.id.test_btn_client)?.isEnabled = false
+    }
+
+    override fun enableStartClient() {
+        view?.findViewById(R.id.test_btn_client)?.isEnabled = true
     }
 }

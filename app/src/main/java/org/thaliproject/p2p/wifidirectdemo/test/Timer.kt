@@ -4,6 +4,7 @@ import android.os.SystemClock
 
 internal class Timer() {
 
+    @Volatile
     private var startTime = 0L;
 
     fun start() {

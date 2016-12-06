@@ -1,23 +1,21 @@
 package org.thaliproject.p2p.wifidirectdemo.test
 
 import android.net.wifi.p2p.WifiP2pManager
-import android.os.SystemClock
+import android.os.Handler
 import org.thaliproject.p2p.wifidirectdemo.DefaultActionListener
 import org.thaliproject.p2p.wifidirectdemo.GroupCredits
 import org.thaliproject.p2p.wifidirectdemo.Settings
 import org.thaliproject.p2p.wifidirectdemo.peers.wifi.WifiAP
 import org.thaliproject.p2p.wifidirectdemo.service.WifiService
-import org.thaliproject.p2p.wifidirectdemo.service.WifiService.ConnectionListener
 import org.thaliproject.p2p.wifidirectdemo.service.location.LocationPermissionService
 import org.thaliproject.p2p.wifidirectdemo.service.messaging.MessagingService
+import org.thaliproject.p2p.wifidirectdemo.test.connection.ConnectDurationTest
 import timber.log.Timber
 
 class TestPresenter(val view: TestContract.View,
                     val messagingService: MessagingService,
                     val wifiService: WifiService,
                     val locationPermissionService: LocationPermissionService) : TestContract.Presenter {
-
-    private val timer = Timer()
 
     override fun onStartServerClicked() {
         createGroup()
@@ -69,13 +67,12 @@ class TestPresenter(val view: TestContract.View,
 
     override fun onStartClientClicked() {
         if (locationPermissionService.isLocationPermissionGranted()) {
-            timer.start()
-            startDiscovery()
+            startConnectTest()
         } else {
             locationPermissionService.requestLocationPermission(object : LocationPermissionService.OnPermissionRequestListener {
                 override fun onGranted() {
                     Timber.e("location permission is granted")
-                    startDiscovery()
+                    startConnectTest()
                 }
 
                 override fun onDenied() {
@@ -85,6 +82,15 @@ class TestPresenter(val view: TestContract.View,
         }
     }
 
+    private fun startConnectTest() {
+        ConnectDurationTest(object : TestResultListener {
+            override fun onTestFinished(result: TestResult) {
+                Timber.d("onTestFinished: ${result.data}")
+                view.showTotalDuration(result.data)
+            }
+        }).start(wifiService)
+    }
+
     private fun startDiscovery() {
         Timber.d("start discovery")
         wifiService.findNetworks(object : WifiService.NetworksAvailableListener {
@@ -92,11 +98,11 @@ class TestPresenter(val view: TestContract.View,
                 Timber.d("onNetworksAvailable, networks: $networks")
                 val wifiNetwork = networks.filter { it -> it.SSID.contains(Settings.DEVICE_NAME) }.first()
                 Timber.d("connect to : $wifiNetwork")
-                wifiService.connect(wifiNetwork, object : ConnectionListener {
+                wifiService.connect(wifiNetwork, object : WifiService.ConnectionListener {
                     override fun onConnected(wifiAP: WifiAP) {
                         Timber.d("onConnected to : $wifiAP")
                         messagingService.startMessagingServer(false)
-                        view.showTotalDuration("Total duration is ${timer.finish()} milliseconds")
+
                         //TODO send data
                         //TODO get data back
                     }

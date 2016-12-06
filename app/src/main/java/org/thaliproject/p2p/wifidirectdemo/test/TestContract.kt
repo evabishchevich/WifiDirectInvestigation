@@ -16,6 +16,10 @@ interface TestContract {
 
         fun showLoading()
 
+        fun disableStartClient()
+
+        fun enableStartClient()
+
     }
 
     interface Presenter {

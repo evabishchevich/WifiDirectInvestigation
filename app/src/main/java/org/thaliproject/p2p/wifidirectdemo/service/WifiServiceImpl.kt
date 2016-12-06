@@ -8,6 +8,7 @@ import org.thaliproject.p2p.wifidirectdemo.WifiDirectInfo
 import org.thaliproject.p2p.wifidirectdemo.peers.Peer
 import org.thaliproject.p2p.wifidirectdemo.peers.PeersDiscoverer
 import org.thaliproject.p2p.wifidirectdemo.peers.wifi.WifiAP
+import timber.log.Timber
 
 class WifiServiceImpl(ctx: Context,
                       val wifiDirectInfo: WifiDirectInfo,
@@ -19,7 +20,6 @@ class WifiServiceImpl(ctx: Context,
     init {
         wifiConnector = WifiConnector(ctx, wifiManager)
     }
-
 
     override fun createGroup(actionListener: DefaultActionListener) {
         wifiDirectInfo.wifiP2pManager.createGroup(wifiDirectInfo.channel,
@@ -45,7 +45,6 @@ class WifiServiceImpl(ctx: Context,
                         actionListener.onFailure(reason)
                     }
                 })
-
     }
 
     override fun requestGroupInfo(groupInfoListener: WifiP2pManager.GroupInfoListener) {
@@ -56,11 +55,12 @@ class WifiServiceImpl(ctx: Context,
     }
 
     override fun findNetworks(networksListener: WifiService.NetworksAvailableListener) {
+        Timber.d("findNetworks")
         peersDiscoverer.startDiscovery(object : PeersDiscoverer.PeersDiscoverListener {
             override fun onPeersDiscovered(peers: List<Peer>) {
                 networksListener.onNetworksAvailable(peers.map { it -> it as WifiAP })
             }
-        }, false)
+        }, true)
     }
 
     override fun connect(accessPoint: WifiAP, connectionListener: WifiService.ConnectionListener) {
