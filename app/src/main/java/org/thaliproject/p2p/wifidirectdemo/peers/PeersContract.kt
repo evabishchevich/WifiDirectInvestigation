@@ -1,5 +1,7 @@
 package org.thaliproject.p2p.wifidirectdemo.peers
 
+import org.thaliproject.p2p.wifidirectdemo.GroupCredits
+
 interface PeersContract {
     interface View {
 
@@ -20,17 +22,4 @@ interface PeersContract {
 
     }
 
-    interface PermissionService {
-
-        fun isLocationPermissionGranted(): Boolean
-
-        fun requestLocationPermission(listener: OnPermissionRequestListener)
-
-        interface OnPermissionRequestListener {
-
-            fun onGranted()
-
-            fun onDenied()
-        }
-    }
 }

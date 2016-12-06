@@ -4,6 +4,7 @@ import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentStatePagerAdapter
 import org.thaliproject.p2p.wifidirectdemo.peers.PeersFragment
+import org.thaliproject.p2p.wifidirectdemo.test.TestFragment
 
 class PagesAdapter(fragmentManager: FragmentManager) : FragmentStatePagerAdapter(fragmentManager) {
 
@@ -11,7 +12,10 @@ class PagesAdapter(fragmentManager: FragmentManager) : FragmentStatePagerAdapter
     private val TAB_NAMES = arrayOf("PEERS", "TEST")
 
     override fun getItem(position: Int): Fragment {
-        //TODO change it
+        when (position) {
+            0 -> return PeersFragment()
+            1 -> return TestFragment()
+        }
         return PeersFragment()
     }
 
@@ -22,6 +26,5 @@ class PagesAdapter(fragmentManager: FragmentManager) : FragmentStatePagerAdapter
     override fun getPageTitle(position: Int): CharSequence {
         return TAB_NAMES[position]
     }
-
 
 }

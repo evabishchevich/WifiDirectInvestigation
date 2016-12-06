@@ -3,14 +3,16 @@ package org.thaliproject.p2p.wifidirectdemo.peers
 import android.net.wifi.WifiManager
 import android.net.wifi.p2p.WifiP2pDevice
 import org.thaliproject.p2p.wifidirectdemo.DefaultActionListener
+import org.thaliproject.p2p.wifidirectdemo.GroupCredits
 import org.thaliproject.p2p.wifidirectdemo.WifiDirectState
 import org.thaliproject.p2p.wifidirectdemo.peers.p2p.WifiP2PPeer
 import org.thaliproject.p2p.wifidirectdemo.peers.p2p.WifiP2PPeersDiscoverer
+import org.thaliproject.p2p.wifidirectdemo.service.location.LocationPermissionService
 import org.thaliproject.p2p.wifidirectdemo.service.messaging.MulticastMessageListener
 import timber.log.Timber
 
 class PeersPresenter(val view: PeersContract.View, discoverer: PeersDiscoverer,
-                     permissionService: PeersContract.PermissionService, val wifiDirectState: WifiDirectState, //TODO do wifi staff via interactor
+                     permissionService: LocationPermissionService, val wifiDirectState: WifiDirectState, //TODO do wifi staff via interactor
                      val wifiManager: WifiManager) : PeersContract.Presenter {
 
     private companion object {
@@ -18,7 +20,7 @@ class PeersPresenter(val view: PeersContract.View, discoverer: PeersDiscoverer,
     }
 
     private val peersDiscoverer: PeersDiscoverer
-    private val permissionService: PeersContract.PermissionService
+    private val permissionService: LocationPermissionService
 //    private var serverStarted = false
 
 
@@ -44,7 +46,7 @@ class PeersPresenter(val view: PeersContract.View, discoverer: PeersDiscoverer,
                 }
             })
         } else {
-            permissionService.requestLocationPermission(object : PeersContract.PermissionService.OnPermissionRequestListener {
+            permissionService.requestLocationPermission(object : LocationPermissionService.OnPermissionRequestListener {
                 override fun onGranted() {
                     Timber.e("location permission is granted")
                     startRegularDiscovery()

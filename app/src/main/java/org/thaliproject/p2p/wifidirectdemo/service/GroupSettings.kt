@@ -6,7 +6,7 @@ class GroupSettings {
         val MESSAGING_SERVER_PORT = 8891
         val CONNECTION_TIMEOUT = 5000
 
-        val GROUP_PASSWORD = "UNfhvcvF"
+        val GROUP_PASSWORD = "Kubs3h0d"
         val GROUP_SSID = "DIRECT-b1-ThaliGroup" //Nexus 6p pass
 
     }

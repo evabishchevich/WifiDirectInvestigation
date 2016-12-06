@@ -15,6 +15,7 @@ import android.view.*
 import android.widget.TextView
 import org.thaliproject.p2p.wifidirectdemo.BaseFragment
 import org.thaliproject.p2p.wifidirectdemo.DefaultActionListener
+import org.thaliproject.p2p.wifidirectdemo.GroupCredits
 import org.thaliproject.p2p.wifidirectdemo.R
 import org.thaliproject.p2p.wifidirectdemo.peers.details.PeerDetailsActivity
 import org.thaliproject.p2p.wifidirectdemo.peers.p2p.P2PPeersAdapter
@@ -28,14 +29,10 @@ import org.thaliproject.p2p.wifidirectdemo.service.messaging.MulticastMessageLis
 import timber.log.Timber
 
 
-class PeersFragment : BaseFragment(), PeersContract.View, PeersContract.PermissionService {
+class PeersFragment : BaseFragment(), PeersContract.View {
 
     internal lateinit var peersAdapter: PeersAdapter
     private lateinit var rvPeers: RecyclerView
-
-    private val reqCode = 518
-
-    private lateinit var permissionListener: PeersContract.PermissionService.OnPermissionRequestListener
 
     private lateinit var wifiManager: WifiManager
     private lateinit var peersPresenter: PeersPresenter
@@ -98,21 +95,5 @@ class PeersFragment : BaseFragment(), PeersContract.View, PeersContract.Permissi
     override fun onStop() {
         peersPresenter.onStop()
         super.onStop()
-    }
-
-    override fun isLocationPermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-    }
-
-    override fun requestLocationPermission(listener: PeersContract.PermissionService.OnPermissionRequestListener) {
-        requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), reqCode)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        if (requestCode == reqCode && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            permissionListener.onGranted()
-        } else if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
-            permissionListener.onDenied()
-        }
     }
 }

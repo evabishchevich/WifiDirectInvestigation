@@ -11,6 +11,5 @@ open class DefaultActionListener(val successMsg: String, val errorMsg: String = 
 
     override fun onFailure(reason: Int) {
         Timber.e("$errorMsg. Reason: $reason")
-//        throw RuntimeException(errorMsg)
     }
 }
